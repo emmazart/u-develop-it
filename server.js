@@ -1,6 +1,7 @@
 const express = require('express');
 const req = require('express/lib/request');
 const res = require('express/lib/response');
+const inputCheck = require('./utils/inputCheck');
 var mysql = require('mysql2');
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
     });
 });
 
+// get all candidates
 app.get('/api/candidates', (req, res) => {
     const sql = `SELECT * FROM candidates`;
 
@@ -83,16 +85,27 @@ app.delete('/api/candidate/:id', (req, res) => {
 });
 
 // create a candidate
-// const sql = `INSERT INTO candidates (id, first_name, last_name, industry_connected)
-//             VALUES(?,?,?,?)`;
-// const params = [1, 'Ronald', 'Firbank', 1];
+app.post('/api/candidate', ({ body }, res) => {
+    const errors = inputCheck(body, 'first_name', 'last_name', 'industry_connected');
+    if (errors) {
+        res.status(400).json({ error: errors });
+    }
 
-// db.query(sql, params, (err, result) => {
-//     if (err){
-//         console.log(err);
-//     }
-//     console.log(result);
-// });
+    const sql = `INSERT INTO candidates (first_name, last_name, industry_connected)
+            VALUES(?,?,?)`;
+    const params = [body.first_name, body.last_name, body.industry_connected];
+
+    db.query(sql, params, (err, result) => {
+        if (err){
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({
+            message: 'success',
+            data: body
+        });
+    });
+});
 
 // Default response for any other request (not found) / catchall route / must go last
 app.use((req, res) => {
